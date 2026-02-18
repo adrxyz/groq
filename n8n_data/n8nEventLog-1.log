@@ -1,0 +1,1 @@
+{"__type":"$$EventMessageAudit","id":"078bd9a2-d961-4999-9898-e0d3072cfb6c","ts":"2026-02-18T12:11:49.230+00:00","eventName":"n8n.audit.user.api.created","message":"n8n.audit.user.api.created","payload":{"userId":"6db88652-38c5-4364-9554-6c6d9a8649a8","_email":"contact.adrielm@gmail.com","_firstName":"Jesseedsd","_lastName":" Smthn","globalRole":"global:owner"}}

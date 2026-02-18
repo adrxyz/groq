@@ -1,10 +1,48 @@
-version: '3'
 services:
+  # The Database (Memory)
+  redis:
+    image: redis:alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis_data:/data
+
+  # Your n8n Server
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n-server
+    restart: always
+    ports:
+      - "5678:5678"
+    depends_on:
+      - redis
+    environment:
+      - N8N_SECURE_COOKIE=false
+      - N8N_ENCRYPTION_KEY=n8n_sec_9uR2mX8vK4pQ7tZ1
+      - QUEUE_BULL_REDIS_HOST=redis
+      - QUEUE_BULL_REDIS_PORT=6379
+    volumes:
+      - ./n8n_data:/home/node/.n8n
+      
+
+  # The Bridge
   n8n-openai-bridge:
     image: ghcr.io/sveneisenschmidt/n8n-openai-bridge:latest
+    container_name: n8n-openai-bridge
+    restart: always
     ports:
       - "3333:3333"
+    depends_on:
+      - n8n
     environment:
       - BEARER_TOKEN=n8n_sec_9uR2mX8vK4pQ7tZ1
-    volumes:
-      - ./models.json:/app/models.json
+      - MODEL_LOADER_TYPE=n8n-api
+      - N8N_BASE_URL=http://n8n:5678
+      - N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2ZGI4ODY1Mi0zOGM1LTQzNjQtOTU1NC02YzZkOWE4NjQ5YTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiYThkNDA2NTItZmJiOS00ODZmLWJjNzUtNTc4ZGQ0MDIzOTkzIiwiaWF0IjoxNzcxNDE2NzA5LCJleHAiOjE3NzY1NzEyMDB9.P120iyBHnwT5yB7bNtPpBFtsmMBM85UiL6ht2i8or8c       
+      - AUTO_DISCOVERY_TAG=n8n-openai-bridge
+
+volumes:
+  n8n_data:
+  redis_data:
