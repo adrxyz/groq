@@ -1,0 +1,10 @@
+version: '3'
+services:
+  n8n-openai-bridge:
+    image: ghcr.io/sveneisenschmidt/n8n-openai-bridge:latest
+    ports:
+      - "3333:3333"
+    environment:
+      - BEARER_TOKEN=n8n_sec_9uR2mX8vK4pQ7tZ1
+    volumes:
+      - ./models.json:/app/models.json
