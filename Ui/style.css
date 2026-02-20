@@ -1,0 +1,51 @@
+/* 1. Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0f172a; /* Match slate-900 */
+}
+
+::-webkit-scrollbar-thumb {
+    background: #334155; /* slate-700 */
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #4f46e5; /* indigo-600 */
+}
+
+/* 2. Glassmorphism for AI Bubbles */
+.ai-bubble {
+    backdrop-filter: blur(10px);
+    background-color: rgba(30, 41, 59, 0.7); /* slate-800 with transparency */
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* 3. History Button Hover Effect */
+#history-list button {
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+}
+
+#history-list button:hover {
+    background-color: #1e293b;
+    border-left: 3px solid #4f46e5; /* Indigo glow on the side */
+    padding-left: 12px;
+}
+
+/* 4. Smooth Message Entry Animation */
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#chat-window > div {
+    animation: slideUp 0.3s ease-out;
+}
+
+/* 5. Glowing Status Dot */
+#status-dot.online {
+    box-shadow: 0 0 8px #22c55e;
+}

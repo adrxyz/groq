@@ -1,0 +1,22 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install Docker CLI and buildx for container tests
+# Docker socket will be mounted at runtime via -v /var/run/docker.sock:/var/run/docker.sock
+RUN apk add --no-cache docker-cli docker-cli-buildx
+
+# Copy package files
+COPY package*.json ./
+
+# Install ALL dependencies (including dev dependencies for testing)
+# Using build cache mount for npm cache
+RUN --mount=type=cache,target=/root/.npm \
+    npm install --prefer-offline --no-audit --no-fund
+
+# Copy source and test files
+COPY src/ ./src/
+COPY tests/ ./tests/
+
+# Run tests
+CMD ["npm", "test"]
