@@ -1,16 +1,75 @@
 let chats = JSON.parse(localStorage.getItem('nexus_mono_chats')) || [];
 let currentChatId = null;
 
-const chatWindow = document.getElementById('chat-window');
+const msgContainer = document.getElementById('message-container');
 const historyList = document.getElementById('history-list');
 const userInput = document.getElementById('user-input');
 const chatForm = document.getElementById('chat-form');
 const sidebar = document.getElementById('sidebar');
-const sidebarToggle = document.getElementById('sidebar-toggle');
 const modalOverlay = document.getElementById('modal-overlay');
 
-// --- API CONFIGURATION ---
-const N8N_WEBHOOK_URL = "http://localhost:5678/webhook/6e416eb5-8b55-495c-af25-e9d0aa2cd250";
+const N8N_URL = "http://localhost:5678/webhook/6e416eb5-8b55-495c-af25-e9d0aa2cd250";
+
+// --- 1. THE COLORFUL SYNTAX HIGHLIGHTER ---
+function highlightSyntax(code) {
+    let safeCode = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    
+    // Comments - Gray
+    safeCode = safeCode.replace(/(\#.*|\/\/.*)(?![^<]*>)/g, '<span class="text-slate-500 italic">$1</span>');
+    // Strings - Green
+    safeCode = safeCode.replace(/(&quot;.*?&quot;|'.*?'|".*?")(?![^<]*>)/g, '<span class="text-green-400">$1</span>');
+    // Functions - Blue/Cyan
+    safeCode = safeCode.replace(/\b([a-zA-Z_]\w*)(?=\s*\()(?![^<]*>)/g, '<span class="text-cyan-300">$1</span>');
+    // Keywords - Pink/Purple
+    const keywords = ['def', 'class', 'import', 'from', 'return', 'if', 'else', 'elif', 'for', 'while', 'try', 'except', 'with', 'as', 'pass', 'break', 'continue', 'and', 'or', 'not', 'in', 'is', 'const', 'let', 'var', 'function'];
+    const kwRegex = new RegExp(`\\b(${keywords.join('|')})\\b(?![^<]*>)`, 'g');
+    safeCode = safeCode.replace(kwRegex, '<span class="text-pink-400 font-bold">$1</span>');
+    // Numbers - Amber
+    safeCode = safeCode.replace(/\b(\d+)\b(?![^<]*>)/g, '<span class="text-amber-300">$1</span>');
+    
+    return safeCode;
+}
+
+// --- 2. THE MARKDOWN FORMATTER (Makes it easy to read) ---
+function formatMarkdown(text) {
+    if (!text) return "";
+    let parsed = text.trim();
+
+    // Handle Code Blocks with Colorful UI
+    parsed = parsed.replace(/\n*```(\w*)\n([\s\S]*?)```\n*/g, function(match, lang, code) {
+        const highlighted = highlightSyntax(code.trim());
+        const label = lang ? lang.toUpperCase() : "CODE";
+        return `
+            <div class="my-4 rounded-xl overflow-hidden border border-white/10 bg-[#0a0a0a] shadow-xl">
+                <div class="flex justify-between items-center px-4 py-2 bg-white/5 border-b border-white/5">
+                    <span class="text-[10px] font-black text-slate-500 tracking-widest">${label}</span>
+                    <button onclick="copyCode(this)" class="text-[10px] font-bold text-slate-500 hover:text-white transition-colors">COPY</button>
+                </div>
+                <div class="p-4 overflow-x-auto">
+                    <pre class="font-mono text-sm leading-relaxed text-slate-300"><code>${highlighted}</code></pre>
+                </div>
+            </div>`;
+    });
+
+    // Inline code `like this`
+    parsed = parsed.replace(/`([^`]+)`/g, '<code class="bg-white/10 text-pink-300 px-1.5 py-0.5 rounded font-mono text-[13px]">$1</code>');
+    // Bold **text**
+    parsed = parsed.replace(/\*\*([^\*]+)\*\*/g, '<strong class="text-white font-bold">$1</strong>');
+    // Newlines for spacing
+    parsed = parsed.replace(/\n\n/g, '<div class="h-4"></div>');
+
+    return parsed;
+}
+
+// --- 3. COPY TO CLIPBOARD HELPER ---
+window.copyCode = function(btn) {
+    const code = btn.closest('.rounded-xl').querySelector('code').innerText;
+    navigator.clipboard.writeText(code).then(() => {
+        const oldText = btn.innerText;
+        btn.innerText = "COPIED!";
+        setTimeout(() => btn.innerText = oldText, 2000);
+    });
+};
 
 function updateStorage() {
     localStorage.setItem('nexus_mono_chats', JSON.stringify(chats));
@@ -18,7 +77,7 @@ function updateStorage() {
 
 function createNewChat() {
     const id = Date.now();
-    chats.unshift({ id, title: "NEW ENTRY", messages: [] });
+    chats.unshift({ id, title: "NEW SESSION", messages: [] });
     currentChatId = id;
     updateStorage();
     renderAll();
@@ -38,22 +97,22 @@ function deleteChat(id) {
 
 function startEditing(index) {
     const activeChat = chats.find(c => c.id === currentChatId);
-    const msgElement = document.getElementById(`msg-content-${index}`);
+    const msgBox = document.getElementById(`msg-text-${index}`);
     const originalText = activeChat.messages[index].content;
 
-    msgElement.innerHTML = `
-        <textarea id="edit-input-${index}" class="w-full bg-white/10 text-white border border-white/20 p-2 rounded-lg outline-none resize-none">${originalText}</textarea>
-        <div class="flex gap-2 mt-2 justify-end">
-            <button onclick="saveEdit(${index})" class="text-[10px] font-black uppercase text-white hover:underline">Save</button>
-            <button onclick="renderMessages()" class="text-[10px] font-black uppercase text-slate-500 hover:underline">Cancel</button>
+    msgBox.innerHTML = `
+        <textarea id="editor-${index}" class="w-full bg-white/5 text-white border border-white/10 p-4 rounded-xl outline-none resize-none mb-2 font-sans text-sm">${originalText}</textarea>
+        <div class="flex gap-2 justify-end">
+            <button onclick="saveEdit(${index})" class="text-[10px] font-bold uppercase text-white px-3 py-1 bg-white/10 rounded-md hover:bg-white/20">Save</button>
+            <button onclick="renderMessages()" class="text-[10px] font-bold uppercase text-slate-500 px-3 py-1 hover:text-white">Cancel</button>
         </div>
     `;
-    document.getElementById(`edit-input-${index}`).focus();
+    document.getElementById(`editor-${index}`).focus();
 }
 
 function saveEdit(index) {
     const activeChat = chats.find(c => c.id === currentChatId);
-    const newText = document.getElementById(`edit-input-${index}`).value;
+    const newText = document.getElementById(`editor-${index}`).value;
     if (newText.trim()) {
         activeChat.messages[index].content = newText;
         updateStorage();
@@ -65,9 +124,9 @@ function renderHistory() {
     historyList.innerHTML = '';
     chats.forEach(chat => {
         const div = document.createElement('div');
-        div.className = `group flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all mb-1 ${chat.id === currentChatId ? 'bg-white/10 text-white border border-white/10' : 'hover:bg-white/5 text-slate-500'}`;
+        div.className = `group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all mb-1 ${chat.id === currentChatId ? 'bg-white/5 text-white' : 'hover:bg-white/5 text-slate-500'}`;
         div.innerHTML = `
-            <span class="text-xs font-bold truncate flex-1" onclick="selectChat(${chat.id})">${chat.title}</span>
+            <span class="text-xs font-semibold truncate flex-1" onclick="selectChat(${chat.id})">${chat.title}</span>
             <button onclick="deleteChat(${chat.id})" class="opacity-0 group-hover:opacity-100 p-1 hover:text-white transition-opacity">
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
@@ -79,126 +138,90 @@ function renderHistory() {
 function renderMessages() {
     const activeChat = chats.find(c => c.id === currentChatId);
     if (!activeChat || activeChat.messages.length === 0) {
-        chatWindow.innerHTML = `<div id="empty-state" class="h-full flex flex-col items-center justify-center opacity-20"><h2 class="text-6xl font-black italic tracking-tighter">NEXUS</h2></div>`;
-        document.getElementById('active-title').innerText = "STANDBY MODE";
+        msgContainer.innerHTML = `
+            <div class="h-[60vh] flex flex-col items-center justify-center">
+                <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-2xl">
+                    <div class="w-5 h-5 bg-black rounded-md"></div>
+                </div>
+                <h2 class="text-2xl font-bold tracking-tighter text-white">How can I help you today?</h2>
+            </div>`;
+        document.getElementById('active-title').innerText = "Standby";
         return;
     }
 
     document.getElementById('active-title').innerText = activeChat.title;
-    chatWindow.innerHTML = activeChat.messages.map((m, index) => `
-        <div class="flex gap-6 max-w-3xl ${m.role === 'user' ? 'ml-auto flex-row-reverse' : ''}">
-            <div class="w-6 h-6 mt-1 flex-shrink-0 flex items-center justify-center text-[10px] font-black border ${m.role === 'user' ? 'bg-white text-black border-white' : 'border-white/20 text-white'}">
-                ${m.role === 'user' ? 'U' : 'N'}
+    msgContainer.innerHTML = activeChat.messages.map((m, index) => `
+        <div class="flex gap-6 group">
+            <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-[10px] font-black border ${m.role === 'user' ? 'bg-[#222] text-white border-white/10' : 'bg-white text-black border-white'}">
+                ${m.role === 'user' ? 'S' : 'N'}
             </div>
-            <div class="flex-1 group ${m.role === 'user' ? 'text-right' : ''}">
-                <div id="msg-content-${index}" class="text-[13px] leading-relaxed inline-block ${m.role === 'user' ? 'text-white bg-white/5 p-3 rounded-xl rounded-tr-none' : 'text-slate-400'}">
-                    ${m.content}
+            <div class="flex-1 min-w-0">
+                <div class="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1">${m.role === 'user' ? 'You' : 'Nexus AI'}</div>
+                <div id="msg-text-${index}" class="text-[15px] leading-relaxed text-slate-200">
+                    ${m.role === 'assistant' ? formatMarkdown(m.content) : m.content}
                 </div>
                 ${m.role === 'user' ? `
-                    <div class="mt-1 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onclick="startEditing(${index})" class="text-slate-600 hover:text-white p-1">
+                    <div class="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="startEditing(${index})" class="text-slate-600 hover:text-white flex items-center gap-1.5 transition-all">
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            <span class="text-[9px] font-bold uppercase tracking-widest">Edit</span>
                         </button>
                     </div>
                 ` : ''}
             </div>
         </div>
     `).join('');
-    chatWindow.scrollTo({ top: chatWindow.scrollHeight, behavior: 'smooth' });
+    document.getElementById('chat-window').scrollTo({ top: document.getElementById('chat-window').scrollHeight, behavior: 'smooth' });
 }
 
-function showThinking() {
-    // TWEAK: Remove any existing thinking bubbles first so they don't stack up
-    document.getElementById('thinking')?.remove(); 
-
-    const div = document.createElement('div');
-    div.id = 'thinking';
-    div.className = 'flex gap-6 max-w-3xl';
-    div.innerHTML = `
-        <div class="w-6 h-6 border border-white/20 text-white flex items-center justify-center text-[10px] font-black">N</div>
-        <div class="flex items-center gap-1.5">
-            <div class="dot w-1 h-1 rounded-full bg-white/50 animate-pulse"></div>
-            <div class="dot w-1 h-1 rounded-full bg-white/50 animate-pulse" style="animation-delay: 0.2s"></div>
-            <div class="dot w-1 h-1 rounded-full bg-white/50 animate-pulse" style="animation-delay: 0.4s"></div>
-        </div>`;
-    chatWindow.appendChild(div);
-    chatWindow.scrollTo({ top: chatWindow.scrollHeight, behavior: 'smooth' });
-}
-
-// --- NEW ASYNC API HANDLER ---
 async function callN8N(userText, activeChat) {
-    showThinking();
+    const thinkingDiv = document.createElement('div');
+    thinkingDiv.className = 'flex gap-6 py-4';
+    thinkingDiv.innerHTML = `
+        <div class="w-8 h-8 rounded-lg bg-white text-black flex items-center justify-center text-[10px] font-black">N</div>
+        <div class="flex items-center gap-1.5"><div class="dot w-1.5 h-1.5 rounded-full bg-white"></div><div class="dot w-1.5 h-1.5 rounded-full bg-white/50"></div><div class="dot w-1.5 h-1.5 rounded-full bg-white/20"></div></div>`;
+    msgContainer.appendChild(thinkingDiv);
+
     try {
-        const response = await fetch(N8N_WEBHOOK_URL, {
+        const response = await fetch(N8N_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                chatId: activeChat.id,
-                message: userText 
-            })
+            body: JSON.stringify({ message: userText })
         });
-
-        if (!response.ok) throw new Error("Network response was not ok");
-
         const data = await response.json();
+        const aiResponse = data.output || data.text || "No response data found.";
         
-        // n8n usually returns an object. Adjust 'data.output' to match your n8n output key.
-        const aiMessage = data.output || data.text || JSON.stringify(data);
-
-        document.getElementById('thinking')?.remove();
-        activeChat.messages.push({ role: 'assistant', content: aiMessage });
+        thinkingDiv.remove();
+        activeChat.messages.push({ role: 'assistant', content: aiResponse });
         updateStorage();
         renderMessages();
-
-    } catch (error) {
-        console.error("API Error:", error);
-        
-        // TWEAK: Ensure the thinking bubble is removed even if the API fails
-        document.getElementById('thinking')?.remove(); 
-        
-        activeChat.messages.push({ role: 'assistant', content: "CRITICAL ERROR: CONNECTION TO NEXUS CORE FAILED." });
-        updateStorage(); // Ensure error saves to local storage
+    } catch (e) {
+        thinkingDiv.remove();
+        activeChat.messages.push({ role: 'assistant', content: "Error connecting to Core." });
         renderMessages();
     }
 }
 
-function renderAll() {
-    renderHistory();
-    renderMessages();
-}
-
-sidebarToggle.onclick = () => sidebar.classList.toggle('collapsed');
+document.getElementById('sidebar-toggle').onclick = () => sidebar.classList.toggle('collapsed');
 document.getElementById('new-chat-btn').onclick = createNewChat;
-
 document.getElementById('clear-all-trigger').onclick = () => modalOverlay.classList.remove('hidden');
 document.getElementById('modal-cancel').onclick = () => modalOverlay.classList.add('hidden');
 document.getElementById('modal-confirm').onclick = () => {
-    chats = [];
-    currentChatId = null;
-    updateStorage();
-    renderAll();
-    modalOverlay.classList.add('hidden');
+    chats = []; currentChatId = null; updateStorage(); renderAll(); modalOverlay.classList.add('hidden');
 };
 
 chatForm.onsubmit = (e) => {
     e.preventDefault();
     const val = userInput.value.trim();
     if (!val) return;
-    
     if (!currentChatId) createNewChat();
     const activeChat = chats.find(c => c.id === currentChatId);
-    
-    // Auto-generate title for first message
-    if (activeChat.messages.length === 0) {
-        activeChat.title = val.substring(0, 18).toUpperCase() + (val.length > 18 ? "..." : "");
-    }
-    
+    if (activeChat.messages.length === 0) activeChat.title = val.substring(0, 20).toUpperCase();
     activeChat.messages.push({ role: 'user', content: val });
     userInput.value = '';
     userInput.style.height = 'auto';
-    
     renderMessages();
-    callN8N(val, activeChat); // Trigger n8n
+    callN8N(val, activeChat);
 };
 
 userInput.addEventListener("input", function() {
@@ -206,5 +229,5 @@ userInput.addEventListener("input", function() {
     this.style.height = (this.scrollHeight) + "px";
 });
 
-// Initialize on load
+function renderAll() { renderHistory(); renderMessages(); }
 renderAll();

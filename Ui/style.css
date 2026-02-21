@@ -42,3 +42,48 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: #555; }
 
 .hidden { display: none !important; }
+
+body { font-family: 'Inter', sans-serif; }
+
+#sidebar.collapsed { width: 0; transform: translateX(-100%); opacity: 0; }
+
+.dot { animation: pulse 1.4s infinite; }
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes pulse {
+    0%, 100% { transform: scale(0.8); opacity: 0.3; }
+    50% { transform: scale(1.2); opacity: 1; }
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+/* Fix code block overflowing the screen */
+pre { max-width: 100%; overflow-x: auto; }
+
+/* Ensure code doesn't wrap weirdly inside the colorful boxes */
+pre code {
+    white-space: pre !important;
+    display: block;
+}
+
+/* Custom scrollbar for the code blocks */
+.custom-scrollbar::-webkit-scrollbar {
+    height: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Add some spacing for the regular text paragraphs */
+.prose-text {
+    margin-bottom: 1rem;
+    display: block;
+}
