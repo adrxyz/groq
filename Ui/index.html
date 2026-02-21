@@ -1,44 +1,82 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Agent - Pro Interface</title>
+    <title>Nexus AI | Mono Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-900 text-slate-100 flex h-screen overflow-hidden">
+<body class="text-slate-200 flex h-screen overflow-hidden">
 
-    <aside class="w-64 bg-slate-800 flex flex-col border-r border-slate-700">
-        <div class="p-4 border-b border-slate-700">
-            <button id="new-chat-btn" class="w-full flex items-center justify-center gap-2 p-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-all font-semibold">
-                <span>+</span> New Chat
+    <aside id="sidebar" class="w-72 glass-dark border-r border-white/10 flex flex-col">
+        <div class="p-6">
+            <div class="flex items-center gap-3 mb-8 px-2">
+                <div class="w-7 h-7 bg-white rounded flex items-center justify-center">
+                    <div class="w-3 h-3 bg-black rounded-sm"></div>
+                </div>
+                <h1 class="text-lg font-bold tracking-tighter text-white uppercase italic">Nexus</h1>
+            </div>
+
+            <button id="new-chat-btn" class="w-full flex items-center justify-center gap-2 p-3 bg-white text-black hover:bg-slate-200 rounded-lg transition-all font-bold text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                NEW SESSION
             </button>
         </div>
 
-        <nav id="history-list" class="flex-1 overflow-y-auto p-2 space-y-1">
-            </nav>
+        <nav class="flex-1 overflow-y-auto px-4">
+            <label class="px-2 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 block">Archive</label>
+            <div id="history-list" class="space-y-1"></div>
+        </nav>
 
-        <div class="p-4 border-t border-slate-700 space-y-2">
-            <button id="settings-btn" class="w-full text-left p-2 hover:bg-slate-700 rounded transition-all text-sm">⚙️ Settings</button>
-            <button id="clear-btn" class="w-full text-left p-2 hover:bg-red-900/30 text-red-400 rounded transition-all text-sm">🗑️ Delete History</button>
+        <div class="p-4 border-t border-white/5">
+            <button id="clear-all-trigger" class="w-full flex items-center justify-center gap-2 p-2 hover:text-white text-slate-500 transition-all text-[11px] font-bold uppercase tracking-widest">
+                Clear All Data
+            </button>
         </div>
     </aside>
 
-    <main class="flex-1 flex flex-col relative">
-        <div id="chat-window" class="flex-1 overflow-y-auto p-6 space-y-4">
-            </div>
-
-        <footer class="p-4 bg-slate-900">
-            <form id="chat-form" class="max-w-3xl mx-auto relative">
-                <input type="text" id="user-input" placeholder="Message Claude Haiku..." 
-                    class="w-full p-4 bg-slate-800 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <button type="submit" class="absolute right-3 top-3 p-1 text-indigo-400 hover:text-white transition-all">
-                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
+    <main class="flex-1 flex flex-col relative bg-black">
+        <header class="h-16 border-b border-white/5 flex items-center justify-between px-6 glass-dark z-10">
+            <div class="flex items-center gap-4">
+                <button id="sidebar-toggle" class="p-2 hover:bg-white/5 rounded-lg text-slate-400 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 </button>
-            </form>
+                <div id="active-title" class="text-xs font-bold text-slate-400 uppercase tracking-widest">Standby Mode</div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="w-2 h-2 rounded-full bg-white animate-pulse"></div>
+                <span class="text-[10px] font-bold text-white tracking-widest uppercase">System Online</span>
+            </div>
+        </header>
+
+        <div id="chat-window" class="flex-1 overflow-y-auto p-8 space-y-10"></div>
+
+        <footer class="p-6 bg-gradient-to-t from-black via-black to-transparent">
+            <div class="max-w-3xl mx-auto">
+                <form id="chat-form" class="relative bg-neutral-900 border border-white/10 rounded-xl overflow-hidden focus-within:border-white/40 transition-all">
+                    <textarea id="user-input" rows="1" placeholder="Enter command..." class="w-full p-4 bg-transparent outline-none text-white placeholder-slate-600 resize-none min-h-[56px] max-h-64"></textarea>
+                    <div class="flex items-center justify-between p-2 bg-white/[0.02] border-t border-white/5">
+                        <button type="submit" class="ml-auto bg-white text-black px-4 py-1.5 rounded-md hover:bg-slate-200 transition-all text-xs font-black uppercase tracking-tighter">
+                            Execute
+                        </button>
+                    </div>
+                </form>
+            </div>
         </footer>
     </main>
+
+    <div id="modal-overlay" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-neutral-900 border border-white/10 p-8 rounded-2xl max-w-sm w-full mx-4 shadow-2xl">
+            <h3 class="text-white font-bold text-lg mb-2 uppercase tracking-tighter italic">Wipe Memory?</h3>
+            <p class="text-slate-400 text-sm mb-6">This will delete all local conversation archives. This action is irreversible.</p>
+            <div class="flex gap-3">
+                <button id="modal-cancel" class="flex-1 px-4 py-2 border border-white/10 text-white text-xs font-bold uppercase rounded-lg hover:bg-white/5 transition-all">Cancel</button>
+                <button id="modal-confirm" class="flex-1 px-4 py-2 bg-white text-black text-xs font-bold uppercase rounded-lg hover:bg-slate-200 transition-all">Confirm</button>
+            </div>
+        </div>
+    </div>
 
     <script src="app.js"></script>
 </body>
