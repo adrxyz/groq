@@ -186,6 +186,7 @@ async function callN8N(userText, activeChat) {
         const response = await fetch(N8N_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            "X-Nexus-Key": "n8n_sec_9uR2mX8vK4pQ7tZ1 ",
             body: JSON.stringify({ message: userText })
         });
         const data = await response.json();
